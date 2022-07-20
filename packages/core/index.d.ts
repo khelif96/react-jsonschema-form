@@ -23,7 +23,7 @@ declare module '@rjsf/core' {
         hideError?: boolean;
         enctype?: string;
         extraErrors?: any;
-        ErrorList?: React.FunctionComponent<ErrorListProps>;
+        ErrorList?: React.FunctionComponent<ErrorListProps<T>>;
         fields?: { [name: string]: Field };
         FieldTemplate?: React.FunctionComponent<FieldTemplateProps>;
         formContext?: any;
@@ -50,7 +50,7 @@ declare module '@rjsf/core' {
         target?: string;
         transformErrors?: (errors: AjvError[]) => AjvError[];
         uiSchema?: UiSchema;
-        validate?: (formData: T, errors: FormValidation) => FormValidation;
+        validate?: (formData: T, errors: FormValidation<T>) => FormValidation<T>;
         widgets?: { [name: string]: Widget };
         /**
          * WARNING: This exists for internal react-jsonschema-form purposes only. No guarantees of backwards
@@ -261,8 +261,8 @@ declare module '@rjsf/core' {
         stack: string;
     };
 
-    export type ErrorListProps = {
-        errorSchema: FormValidation;
+    export type ErrorListProps<T = any> = {
+        errorSchema: FormValidation<T>;
         errors: AjvError[];
         formContext: any;
         schema: JSONSchema7;
@@ -273,7 +273,7 @@ declare module '@rjsf/core' {
         edit: boolean;
         formData: T;
         errors: AjvError[];
-        errorSchema: FormValidation;
+        errorSchema: FormValidation<T>;
         idSchema: IdSchema;
         schema: JSONSchema7;
         uiSchema: UiSchema;
@@ -289,9 +289,17 @@ declare module '@rjsf/core' {
         addError: (message: string) => void;
     };
 
-    type FormValidation = FieldValidation & {
-        [fieldName: string]: FieldValidation;
-    };
+    type RecursivelyAddError<T> = T extends object
+        ? {
+            [K in keyof T]: RecursivelyAddError<T[K]>;
+          } & FieldValidation
+        : T extends []
+        ? {
+            [K in keyof T]: RecursivelyAddError<T[K]>;
+          } & FieldValidation
+        : FieldValidation;
+
+    type FormValidation<T> = RecursivelyAddError<T>;
 
     type FormSubmit<T = any> = {
         formData: T;
